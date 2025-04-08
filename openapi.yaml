@@ -1,0 +1,161 @@
+openapi: 3.0.3
+info:
+  title: Vaulta API
+  description: API for secure document encryption, sharing, and access.
+  version: 1.0.0
+  contact:
+    name: Vaulta Dev Team
+    url: https://vaulta.io/dev
+    email: support@vaulta.io
+
+servers:
+  - url: https://api.vaulta.io/v1
+    description: Production Server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    EncryptResponse:
+      type: object
+      properties:
+        document_id:
+          type: string
+        status:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+
+    ShareResponse:
+      type: object
+      properties:
+        share_url:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+
+    DocumentMetadata:
+      type: object
+      properties:
+        document_id:
+          type: string
+        status:
+          type: string
+        download_url:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+
+    DeleteResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        document_id:
+          type: string
+
+security:
+  - BearerAuth: []
+
+paths:
+  /documents/encrypt:
+    post:
+      summary: Encrypt and upload a document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                filename:
+                  type: string
+                expires_in:
+                  type: integer
+      responses:
+        '200':
+          description: Document encrypted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncryptResponse'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized access
+
+  /documents/{document_id}:
+    get:
+      summary: Get encrypted document metadata
+      parameters:
+        - in: path
+          name: document_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document metadata retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentMetadata'
+        '404':
+          description: Document not found
+
+    delete:
+      summary: Delete a document permanently
+      parameters:
+        - in: path
+          name: document_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '404':
+          description: Document not found
+
+  /documents/share:
+    post:
+      summary: Generate a shareable document link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                document_id:
+                  type: string
+                access_level:
+                  type: string
+                  enum: [read-only, read-write]
+                expires_in:
+                  type: integer
+      responses:
+        '200':
+          description: Share link created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareResponse'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized access
